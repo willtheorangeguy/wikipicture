@@ -74,6 +74,8 @@ def main() -> None:
 @click.option("--open-report/--no-open-report", "open_report_flag", default=True, help="Auto-open report in browser.")
 @click.option("--cluster-distance", default=500, type=float,
               help="Distance threshold in metres for grouping photos.")
+@click.option("--max-article-candidates", default=5, type=click.IntRange(1, 10),
+              help="Number of ranked Wikipedia article candidates per photo (1–10, default 5).")
 @click.option("-v", "--verbose", is_flag=True, help="Enable verbose (DEBUG) logging.")
 def scan(
     photo_dir: Path,
@@ -83,6 +85,7 @@ def scan(
     no_cache: bool,
     open_report_flag: bool,
     cluster_distance: float,
+    max_article_candidates: int,
     verbose: bool,
 ) -> None:
     """Scan geotagged photos and match them to Wikipedia articles."""
@@ -101,7 +104,7 @@ def scan(
 
     try:
         _run_pipeline(photo_dir, output, limit, skip_quality_check,
-                      cache, open_report_flag, cluster_distance)
+                      cache, open_report_flag, cluster_distance, max_article_candidates)
     except KeyboardInterrupt:
         click.echo("\nInterrupted — partial results were not saved.")
         sys.exit(130)
@@ -118,6 +121,7 @@ def _run_pipeline(
     cache: Cache | None,
     should_open_report: bool,
     cluster_distance: float,
+    max_article_candidates: int = 5,
 ) -> None:
     # -- 2. Scan directory -------------------------------------------------
     click.echo(f"Scanning {photo_dir} for geotagged photos …")
@@ -142,7 +146,7 @@ def _run_pipeline(
 
     for cluster in _progress(clusters, desc="Analysing locations", unit="loc"):
         try:
-            _process_cluster(cluster, cache, skip_quality_check, opportunities)
+            _process_cluster(cluster, cache, skip_quality_check, opportunities, max_article_candidates)
         except KeyboardInterrupt:
             raise
         except Exception:
@@ -177,6 +181,7 @@ def _process_cluster(
     cache: Cache | None,
     skip_quality_check: bool,
     opportunities: list,
+    max_article_candidates: int = 5,
 ) -> None:
     lat, lon = cluster.center_lat, cluster.center_lon
 
@@ -240,6 +245,7 @@ def _process_cluster(
             lat=photo.latitude,
             lon=photo.longitude,
             location_name=location_name,
+            max_article_candidates=max_article_candidates,
         )
         opportunities.append(opp)
 

@@ -12,6 +12,15 @@ from wikipicture.wiki_analyzer import WikiArticle, check_article_image_need
 
 
 @dataclass
+class ScoredArticle:
+    """A Wikipedia article with its individual image-need score."""
+
+    article: WikiArticle
+    score: float
+    reason: str
+
+
+@dataclass
 class PhotoOpportunity:
     """A scored photo opportunity combining all analysis signals."""
 
@@ -26,6 +35,7 @@ class PhotoOpportunity:
     quality: QualityAssessment | None
     recommendation: str
     reasons: list[str] = field(default_factory=list)
+    top_articles: list[ScoredArticle] = field(default_factory=list)
 
 
 def _pick_best_article(articles: list[WikiArticle]) -> WikiArticle | None:
@@ -34,6 +44,19 @@ def _pick_best_article(articles: list[WikiArticle]) -> WikiArticle | None:
         return None
     # Prefer needs_photo=True, then lowest image_count
     return min(articles, key=lambda a: (not a.needs_photo, a.image_count))
+
+
+def _rank_articles(
+    articles: list[WikiArticle],
+    max_candidates: int = 5,
+) -> list[ScoredArticle]:
+    """Score every article individually and return the top *max_candidates* sorted by score desc."""
+    scored = []
+    for article in articles:
+        s, r = _score_article_need(article)
+        scored.append(ScoredArticle(article=article, score=s, reason=r))
+    scored.sort(key=lambda sa: sa.score, reverse=True)
+    return scored[:max_candidates]
 
 
 def _score_article_need(article: WikiArticle | None) -> tuple[float, str]:
@@ -112,6 +135,7 @@ def score_opportunity(
     lat: float,
     lon: float,
     location_name: str,
+    max_article_candidates: int = 5,
 ) -> PhotoOpportunity:
     """Score a photo opportunity by combining all analysis signals.
 
@@ -129,12 +153,15 @@ def score_opportunity(
         GPS coordinates of the photo.
     location_name:
         Human-readable location name.
+    max_article_candidates:
+        Maximum number of ranked article candidates to include (default 5).
 
     Returns
     -------
     A fully scored :class:`PhotoOpportunity`.
     """
     best_article = _pick_best_article(articles)
+    top_articles = _rank_articles(articles, max_candidates=max_article_candidates)
 
     article_score, article_reason = _score_article_need(best_article)
     commons_score, commons_reason = _score_commons_saturation(commons)
@@ -162,6 +189,7 @@ def score_opportunity(
         quality=quality,
         recommendation=_recommendation(total),
         reasons=reasons,
+        top_articles=top_articles,
     )
 
 
