@@ -188,7 +188,7 @@ def scan_directory(directory: Path) -> list[PhotoMetadata]:
     Finds .jpg, .jpeg, .heic, .heif files (case-insensitive).  Files that
     fail to parse are logged as warnings and skipped.
     """
-    directory = Path(directory)
+    directory = Path(directory).resolve()
     results: list[PhotoMetadata] = []
 
     for path in sorted(directory.rglob("*")):
