@@ -6,7 +6,7 @@ from pathlib import Path
 
 from wikipicture.commons_checker import CommonsResult, SaturationLevel
 from wikipicture.quality_filter import QualityAssessment
-from wikipicture.scorer import PhotoOpportunity, rank_opportunities, score_opportunity
+from wikipicture.scorer import PhotoOpportunity, ScoredArticle, rank_opportunities, score_opportunity
 from wikipicture.wiki_analyzer import WikiArticle
 
 
@@ -265,3 +265,58 @@ def test_quality_sharp_not_resolution_ok():
     quality = _quality(overall_suitable=False, resolution_ok=False, is_sharp=True)
     opp = score_opportunity([], None, quality, _FP, 0, 0, "X")
     assert opp.score_breakdown["photo_quality"] == 5
+
+
+# ---------------------------------------------------------------------------
+# top_articles — multi-candidate behaviour
+# ---------------------------------------------------------------------------
+
+def test_top_articles_default_max_five():
+    """With 6 articles, top_articles should contain at most 5."""
+    articles = [_article(title=f"Art{i}", pageid=i, image_count=i) for i in range(6)]
+    opp = score_opportunity(articles, None, None, _FP, 0, 0, "X")
+    assert len(opp.top_articles) == 5
+
+
+def test_top_articles_respects_max_candidates():
+    """max_article_candidates=3 should limit top_articles to 3."""
+    articles = [_article(title=f"Art{i}", pageid=i, image_count=i) for i in range(6)]
+    opp = score_opportunity(articles, None, None, _FP, 0, 0, "X", max_article_candidates=3)
+    assert len(opp.top_articles) == 3
+
+
+def test_top_articles_sorted_descending():
+    """top_articles must be sorted by per-article score descending."""
+    articles = [
+        _article(title="NoImages", image_count=0, needs_photo=False),
+        _article(title="NeedsPhoto", image_count=0, needs_photo=True),
+        _article(title="ManyImages", image_count=10, needs_photo=False),
+    ]
+    opp = score_opportunity(articles, None, None, _FP, 0, 0, "X")
+    scores = [sa.score for sa in opp.top_articles]
+    assert scores == sorted(scores, reverse=True)
+    assert opp.top_articles[0].article.title == "NeedsPhoto"
+
+
+def test_top_articles_each_has_score_and_reason():
+    """Every ScoredArticle in top_articles must have a numeric score and non-empty reason."""
+    articles = [_article(title=f"Art{i}", pageid=i, image_count=i) for i in range(3)]
+    opp = score_opportunity(articles, None, None, _FP, 0, 0, "X")
+    for sa in opp.top_articles:
+        assert isinstance(sa, ScoredArticle)
+        assert isinstance(sa.score, float)
+        assert isinstance(sa.reason, str)
+        assert len(sa.reason) > 0
+
+
+def test_top_articles_empty_when_no_articles():
+    """With no articles, top_articles should be an empty list."""
+    opp = score_opportunity([], None, None, _FP, 0, 0, "X")
+    assert opp.top_articles == []
+
+
+def test_top_articles_fewer_than_max():
+    """With 2 articles and max=5, top_articles should have exactly 2 entries."""
+    articles = [_article(title="A", pageid=1), _article(title="B", pageid=2, image_count=3)]
+    opp = score_opportunity(articles, None, None, _FP, 0, 0, "X", max_article_candidates=5)
+    assert len(opp.top_articles) == 2
