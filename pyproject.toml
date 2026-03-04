@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wikipicture"
+version = "0.1.0"
+description = "Scan geotagged photos and find Wikipedia articles that need images at those locations"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+dependencies = [
+    "Pillow>=10.0",
+    "pillow-heif>=0.13",
+    "requests>=2.31",
+    "opencv-python-headless>=4.8",
+    "click>=8.1",
+    "Jinja2>=3.1",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "responses>=0.23",
+]
+
+[project.scripts]
+wikipicture = "wikipicture.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
