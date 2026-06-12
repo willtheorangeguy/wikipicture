@@ -8,10 +8,11 @@ from dataclasses import dataclass, field
 
 import requests
 
+from wikipicture.http_client import make_session
+
 logger = logging.getLogger(__name__)
 
 API_URL = "https://en.wikipedia.org/w/api.php"
-USER_AGENT = "WikiPicture/0.1 (travel photo Wikipedia tool)"
 RATE_LIMIT_SECONDS = 0.2
 
 # Common non-photo image prefixes to filter out when counting real photos.
@@ -67,10 +68,8 @@ class WikiArticle:
 
 
 def _make_session() -> requests.Session:
-    """Create a requests session with the correct User-Agent."""
-    session = requests.Session()
-    session.headers.update({"User-Agent": USER_AGENT})
-    return session
+    """Create a requests session configured for the Wikimedia APIs."""
+    return make_session()
 
 
 _last_request_time: float = 0.0
