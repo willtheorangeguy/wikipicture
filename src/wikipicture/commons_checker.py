@@ -9,10 +9,11 @@ from dataclasses import dataclass, field
 
 import requests
 
+from wikipicture.http_client import make_session
+
 logger = logging.getLogger(__name__)
 
 COMMONS_API_URL = "https://commons.wikimedia.org/w/api.php"
-USER_AGENT = "WikiPicture/0.1 (travel photo Wikipedia tool)"
 _RATE_LIMIT_S = 0.2  # 200 ms between API calls
 
 # Categories that are too generic to be useful as upload suggestions.
@@ -60,10 +61,8 @@ class CommonsResult:
 
 
 def _session() -> requests.Session:
-    """Return a requests session with the correct User-Agent."""
-    s = requests.Session()
-    s.headers.update({"User-Agent": USER_AGENT})
-    return s
+    """Return a requests session configured for the Wikimedia APIs."""
+    return make_session()
 
 
 def _rate_limit() -> None:

@@ -9,9 +9,9 @@ from dataclasses import dataclass
 
 import requests
 
-logger = logging.getLogger(__name__)
+from wikipicture.http_client import USER_AGENT as _USER_AGENT
 
-_USER_AGENT = "WikiPicture/0.1 (travel photo Wikipedia tool)"
+logger = logging.getLogger(__name__)
 _NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse"
 _MIN_REQUEST_INTERVAL = 1.0  # seconds – Nominatim rate-limit
 
