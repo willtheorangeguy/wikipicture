@@ -24,6 +24,7 @@ try:
     from wikipicture.scorer import score_opportunity, rank_opportunities
     from wikipicture.report import generate_report, open_report
     from wikipicture.cache import Cache
+    from wikipicture.network_paths import resolve_scan_roots
 except ImportError as exc:  # pragma: no cover
     _IMPORT_ERROR = exc
 else:
@@ -65,7 +66,7 @@ def main() -> None:
 
 
 @main.command()
-@click.argument("photo_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.argument("photo_dir", type=str)
 @click.option("-o", "--output", default="wikipicture_report.html", type=click.Path(path_type=Path),
               help="Output HTML report path.")
 @click.option("--limit", default=None, type=int, help="Maximum number of photos to process.")
@@ -78,7 +79,7 @@ def main() -> None:
               help="Number of ranked Wikipedia article candidates per photo (1–10, default 5).")
 @click.option("-v", "--verbose", is_flag=True, help="Enable verbose (DEBUG) logging.")
 def scan(
-    photo_dir: Path,
+    photo_dir: str,
     output: Path,
     limit: int | None,
     skip_quality_check: bool,
@@ -96,6 +97,12 @@ def scan(
 
     _setup_logging(verbose)
 
+    # Expands UNC server roots (\\server\) into their browsable shares.
+    try:
+        photo_dirs = resolve_scan_roots(photo_dir)
+    except OSError as exc:
+        raise click.BadParameter(str(exc), param_hint="'PHOTO_DIR'") from exc
+
     # -- 1. Cache ----------------------------------------------------------
     cache: Cache | None = None
     if not no_cache:
@@ -103,7 +110,7 @@ def scan(
         logger.debug("Cache enabled")
 
     try:
-        _run_pipeline(photo_dir, output, limit, skip_quality_check,
+        _run_pipeline(photo_dirs, output, limit, skip_quality_check,
                       cache, open_report_flag, cluster_distance, max_article_candidates)
     except KeyboardInterrupt:
         click.echo("\nInterrupted — partial results were not saved.")
@@ -114,7 +121,7 @@ def scan(
 
 
 def _run_pipeline(
-    photo_dir: Path,
+    photo_dirs: list[Path],
     output: Path,
     limit: int | None,
     skip_quality_check: bool,
@@ -123,9 +130,11 @@ def _run_pipeline(
     cluster_distance: float,
     max_article_candidates: int = 5,
 ) -> None:
-    # -- 2. Scan directory -------------------------------------------------
-    click.echo(f"Scanning {photo_dir} for geotagged photos …")
-    all_photos = scan_directory(photo_dir)
+    # -- 2. Scan directories -------------------------------------------------
+    all_photos = []
+    for photo_dir in photo_dirs:
+        click.echo(f"Scanning {photo_dir} for geotagged photos ...")
+        all_photos.extend(scan_directory(photo_dir))
 
     geotagged = [p for p in all_photos if p.latitude is not None and p.longitude is not None]
     if limit is not None:
@@ -256,16 +265,18 @@ def _print_summary(ranked: list) -> None:
         click.echo("No opportunities found.")
         return
 
-    click.echo("\n── Top opportunities ──")
+    # ASCII only: Windows consoles often use cp1252, which can't encode
+    # box-drawing or arrow characters.
+    click.echo("\n-- Top opportunities --")
     for i, opp in enumerate(ranked[:5], 1):
-        article_title = opp.best_article.title if opp.best_article else "—"
+        article_title = opp.best_article.title if opp.best_article else "-"
         click.echo(
-            f"  {i}. [{opp.score:.0f}] {opp.location_name}  →  {article_title}"
+            f"  {i}. [{opp.score:.0f}] {opp.location_name}  ->  {article_title}"
             f"  ({opp.recommendation})"
         )
     remaining = len(ranked) - 5
     if remaining > 0:
-        click.echo(f"  … and {remaining} more in the report.")
+        click.echo(f"  ... and {remaining} more in the report.")
 
 
 @main.command("clear-cache")
