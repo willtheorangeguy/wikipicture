@@ -16,6 +16,10 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# The complete set of cache tables. Only these literals are ever interpolated
+# into a SQL statement; nothing caller-supplied is.
+_CACHE_TABLES = ("geocode_cache", "wiki_cache", "commons_cache", "photo_cache")
+
 _DEFAULT_DIR = Path.home() / ".wikipicture"
 
 
@@ -207,20 +211,25 @@ class Cache:
         If *older_than_days* is ``None`` every entry is deleted; otherwise
         only entries whose ``created_at`` is older than the cutoff are removed.
         """
-        tables = ["geocode_cache", "wiki_cache", "commons_cache", "photo_cache"]
         deleted = 0
         with self._conn:
             if older_than_days is None:
-                for table in tables:
-                    cur = self._conn.execute(f"DELETE FROM {table}")  # noqa: S608
+                for table in _CACHE_TABLES:
+                    # Table name is interpolated from _CACHE_TABLES, a fixed
+                    # in-module tuple of literals. SQLite cannot parameterize an
+                    # identifier, and no caller-supplied value reaches this
+                    # string, so there is no injection vector.
+                    cur = self._conn.execute(f"DELETE FROM {table}")  # noqa: S608  # nosec B608
                     deleted += cur.rowcount
             else:
                 cutoff = (
                     datetime.now(timezone.utc) - timedelta(days=older_than_days)
                 ).isoformat()
-                for table in tables:
+                for table in _CACHE_TABLES:
+                    # See the note above: only literal table names are interpolated;
+                    # the cutoff value itself is passed as a bound parameter.
                     cur = self._conn.execute(
-                        f"DELETE FROM {table} WHERE created_at < ?",  # noqa: S608
+                        f"DELETE FROM {table} WHERE created_at < ?",  # noqa: S608  # nosec B608
                         (cutoff,),
                     )
                     deleted += cur.rowcount
