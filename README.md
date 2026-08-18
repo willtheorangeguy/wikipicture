@@ -1,16 +1,38 @@
-# WikiPicture
+<!-- Logo -->
+<h1 align="center">WikiPicture</h1>
 
-Scan your geotagged travel photos and discover which Wikipedia articles need images at those locations.
+<!-- Copy -->
+<h4 align="center">Finds the Wikipedia articles your travel photos could illustrate — by reading where the photos were taken.</h4>
 
-## Features
+<!-- Badges -->
+<div align="center">
+  <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/willtheorangeguy/wikipicture/ci.yml?label=ci">
+  <img alt="GitHub Issues" src="https://img.shields.io/github/issues/willtheorangeguy/wikipicture">
+  <img alt="GitHub Pull Requests" src="https://img.shields.io/github/issues-pr/willtheorangeguy/wikipicture">
+  <img alt="License" src="https://img.shields.io/github/license/willtheorangeguy/wikipicture">
+</div>
 
-- **EXIF GPS extraction** from JPEG and HEIC/HEIF photos
-- **Reverse geocoding** via OpenStreetMap Nominatim
-- **Wikipedia analysis** — finds articles missing images or tagged "needs photo"
-- **Wikimedia Commons saturation check** — see how many photos already exist nearby
-- **Photo quality screening** — resolution and blur detection
-- **Opportunity scoring** — prioritizes your best upload candidates
-- **HTML report** — sortable table with thumbnails, links, and color-coded priority
+<!-- Navigation -->
+<p align="center">
+  <a href="#key-features">Key Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#usage">Usage</a> •
+  <a href="#documentation">Documentation</a> •
+  <a href="#support">Support</a> •
+  <a href="#contributing">Contributing</a> •
+  <a href="#credits">Credits</a> •
+  <a href="#license">License</a>
+</p>
+
+## Key Features
+
+- Reads GPS from JPEG and HEIC/HEIF photos, and clusters nearby ones so a hundred shots of one place cost one lookup.
+- Finds Wikipedia articles near each location that have no images, few images, or a "needs photo" tag.
+- Checks Wikimedia Commons to see how well covered the place already is — and how recently.
+- Screens your photos for resolution and blur, so it does not recommend uploading a shaky one.
+- Scores each photo out of 100 and explains every point in the breakdown.
+- Produces a sortable HTML report with thumbnails and links.
+- Public, unauthenticated APIs only: no keys, no account, and a local SQLite cache so re-runs are fast.
 
 ## Installation
 
@@ -18,35 +40,37 @@ Scan your geotagged travel photos and discover which Wikipedia articles need ima
 pip install -e .
 ```
 
+Python 3.10+. See [`docs/installation.md`](docs/installation.md).
+
 ## Usage
 
 ```bash
-# Scan a folder of photos and generate a report
 wikipicture /path/to/photos --output report.html
-
-# Limit to a specific number of photos
-wikipicture /path/to/photos --output report.html --limit 50
-
-# Skip quality filtering
-wikipicture /path/to/photos --output report.html --skip-quality-check
+wikipicture /path/to/photos --limit 50 --skip-quality-check
+wikipicture clear-cache --older-than 30
 ```
 
-## How It Works
+The `scan` subcommand is implied when the first argument is a path — but only when it comes first. See [`docs/configuration.md`](docs/configuration.md).
 
-1. Scans your photo folder for JPEG and HEIC/HEIF files with GPS data
-2. Clusters nearby photos to reduce API calls
-3. Reverse-geocodes each unique location via Nominatim
-4. Searches Wikipedia for articles about each location
-5. Checks if those articles need images (few/no photos, "needs photo" tags)
-6. Searches Wikimedia Commons to see how saturated each location is
-7. Scores each photo by upload opportunity and generates an HTML report
+## Documentation
 
-## API Usage
+Full documentation lives in [`docs/`](docs/README.md):
+[Quickstart](docs/quickstart.md) · [Installation](docs/installation.md) · [Configuration](docs/configuration.md) · [Architecture](docs/architecture.md) · [API](docs/api.md) · [Development](docs/development.md) · [FAQ](docs/faq.md) · [Troubleshooting](docs/troubleshooting.md) · [Roadmap](docs/roadmap.md)
 
-This tool uses **public, unauthenticated** Wikimedia and OpenStreetMap APIs.
-Rate limits are respected automatically (1 request/second for Nominatim).
-Results are cached in a local SQLite database so re-runs are fast.
+## Support
+
+Open a [GitHub Discussion](https://github.com/willtheorangeguy/wikipicture/discussions/new) or file an [issue](https://github.com/willtheorangeguy/wikipicture/issues/new/choose).
+
+## Contributing
+
+Contributions welcome. See the org-wide [Contributing Guide](https://github.com/willtheorangeguy/.github/blob/main/CONTRIBUTING.md) and [Code of Conduct](https://github.com/willtheorangeguy/.github/blob/main/CODE_OF_CONDUCT.md).
+
+## Credits
+
+Uses [OpenStreetMap Nominatim](https://nominatim.org/), the [Wikipedia API](https://www.mediawiki.org/wiki/API:Main_page), and [Wikimedia Commons](https://commons.wikimedia.org/). Built with [Pillow](https://python-pillow.org/), [OpenCV](https://opencv.org/), [Click](https://click.palletsprojects.com/), and [Jinja2](https://jinja.palletsprojects.com/).
 
 ## License
 
-MIT
+MIT — see [`LICENSE.md`](LICENSE.md).
+
+> It tells you where your photos would be useful. Uploading them is still your decision, and Commons has its own standards worth reading first.
