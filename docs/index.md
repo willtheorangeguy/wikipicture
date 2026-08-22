@@ -3,7 +3,7 @@
 A CLI that reads GPS from your photos, works out which Wikipedia articles near those places need
 images, and ranks your photos by how useful they would be.
 
-```
+```text
 src/wikipicture/
 ├── cli.py               the pipeline, Click commands
 ├── exif_extractor.py    GPS and camera metadata from JPEG/HEIC

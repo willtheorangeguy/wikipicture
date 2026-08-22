@@ -7,12 +7,11 @@ licensing decision rather than a documentation one.
 Ordered by severity. See [`docs/roadmap.md`](../roadmap.md) for the narrative version,
 which also covers deliberate non-goals.
 
-
 **3 open:** 1 medium, 2 low.
 
 ## 1. A location with existing Commons photos is reported as having none when their dates cannot be parsed
 
-**Severity:** Medium  
+**Severity:** Medium
 **Where:** `src/wikipicture/scorer.py` -> `_score_freshness`; `src/wikipicture/commons_checker.py` -> `check_freshness`
 
 **What:** `_score_freshness` returns `(15.0, "No existing photos at this location")` for two different conditions: `commons.nearby_image_count == 0`, and `commons.newest_image_year is None`. The second means Commons found images but no usable dates. `check_freshness` has the same shape -- its final `return "No existing photos"` is reached whenever either year is `None`, after the `nearby_image_count == 0` check has already passed.
@@ -23,7 +22,7 @@ which also covers deliberate non-goals.
 
 ## 2. The "outdated" freshness message quotes the oldest year while the decision used the newest
 
-**Severity:** Low  
+**Severity:** Low
 **Where:** `src/wikipicture/commons_checker.py` -> `check_freshness`
 
 **What:** The branch reads: `if result.newest_image_year < current_year - 5: return f"Photos are outdated (oldest from {result.oldest_image_year})"`. The comparison is on `newest_image_year`; the message reports `oldest_image_year`.
@@ -34,7 +33,7 @@ which also covers deliberate non-goals.
 
 ## 3. The implied scan command only works when the path is the first argument
 
-**Severity:** Low  
+**Severity:** Low
 **Where:** `src/wikipicture/cli.py` -> `_DefaultGroup.parse_args`
 
 **What:** `if args and args[0] not in self.commands and not args[0].startswith("-"): args = ["scan"] + args`. The `startswith("-")` guard exists so a bare `--help` or `--version` still reaches the group, but it also means any invocation beginning with an option skips the injection.
@@ -42,7 +41,6 @@ which also covers deliberate non-goals.
 **Why it matters:** `wikipicture --output report.html ./photos` fails with `no such option: --output`, which names the option rather than the missing subcommand and sends the user looking at their flags. Options-before-arguments is a normal habit, and the README's own examples put the path first without saying it is required -- so the failure looks like the flag does not exist.
 
 **Suggested fix:** Inject `scan` whenever the first non-option argument is not a known command, rather than keying on `args[0]` alone. Special-casing `--help` and `--version` explicitly keeps those working.
-
 
 ---
 

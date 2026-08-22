@@ -2,7 +2,7 @@
 
 A linear pipeline, one module per stage, each producing a dataclass the next one consumes.
 
-```
+```text
 photos → EXIF GPS → clusters → geocode → Wikipedia → Commons → quality → score → report
 ```
 
